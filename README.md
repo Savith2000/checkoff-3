@@ -1,15 +1,29 @@
-Check-Off 3: Data Compression
+Check-Off 3 Data Compression
 
-For this check-off I looked into data compression, which is basically finding ways to store the same data using fewer bytes. I focused on one of the simplest algorithms, run-length encoding (RLE), and wrote it in C three different times, with each version building off the last one.
+Topic
+
+For this check-off I looked into data compression, which is basically finding ways to store the same data using fewer bytes. I focused on one of the simplest algorithms, run-length encoding or RLE, and wrote it in C three different times, with each version building off the last one.
+
+Lossy vs Lossless Compression
 
 The first thing I learned is that there are two main types of compression, lossy and lossless. Lossy compression throws away some of the data to make the file smaller, so you can't get the exact original back. That's fine for stuff like JPEGs, MP3s, and videos, since you usually can't notice the small differences. Lossless compression keeps everything, so when you decompress you get back exactly what you started with. You need that for things like text files, code, and programs, where changing even one byte would break something. ZIP files and PNGs are lossless, and RLE is lossless too.
 
+How RLE Works
+
 RLE works by taking a run of the same character repeated in a row and replacing it with a count and the character. So AAAAAB turns into 5A1B. To decompress it you just read each count and character pair and write the character out that many times. It works really well when the data has a lot of repeats, like a simple image with big areas of one color, but not well when the data barely repeats.
+
+Simple Version
 
 My first file, simple_compression.c, was just me getting the basic idea working. It turns a string like AAAAAB into 5A1B as readable text and then decodes it back. Since the count is stored as a single digit character, a run can only be 9 long before it has to start a new one. It made the algorithm easy to see, but it only works on text and isn't very efficient.
 
-The second file, normal_compression.c, is more like how RLE actually gets done. It works on raw bytes with a length passed in instead of relying on the string ending in a null character, so it can handle any kind of data. The count is stored as an actual byte instead of a digit, so runs can go up to 255. To test it I compressed 300 A's, which came out to only 4 bytes (a run of 255 and then a run of 45), and then checked that decoding gave back the exact original.
+Standard Version
 
-The third file, edge_compression.c, deals with the case where RLE actually makes the data bigger. Every run takes 2 bytes, so if the data doesn't repeat much it almost doubles in size. HELLO is 5 bytes but would turn into 8. To handle this I added a 1-byte flag at the front of the output. If the RLE version is smaller than the original, the flag says it's RLE and the encoded data follows. If not, the flag says it's raw and I just copy the original data after it. When decompressing, it checks the flag to know whether to decode or just copy. This way the worst case is only 1 byte bigger than the original instead of close to double.
+The second file, normal_compression.c, is more like how RLE actually gets done. It works on raw bytes with a length passed in instead of relying on the string ending in a null character, so it can handle any kind of data. The count is stored as an actual byte instead of a digit, so runs can go up to 255. To test it I compressed 300 A's, which came out to only 4 bytes, a run of 255 and then a run of 45, and then checked that decoding gave back the exact original.
+
+Edge Case Version
+
+The third file, edge_compression.c, deals with the case where RLE actually makes the data bigger. Every run takes 2 bytes, so if the data doesn't repeat much it almost doubles in size. HELLO is 5 bytes but would turn into 8. To handle this I added a 1 byte flag at the front of the output. If the RLE version is smaller than the original, the flag says it's RLE and the encoded data follows. If not, the flag says it's raw and I just copy the original data after it. When decompressing, it checks the flag to know whether to decode or just copy. This way the worst case is only 1 byte bigger than the original instead of close to double.
+
+Most Interesting Discovery
 
 The most interesting thing I learned was that no lossless compression algorithm can make every file smaller, because of the pigeonhole principle. There are more possible files of a certain length than there are shorter files, so if an algorithm shrank every single input, at least two different inputs would have to end up as the same compressed output. Then you couldn't tell them apart when decompressing, which would make it lossy. So every lossless compressor has to make some files the same size or bigger. My flag trick in edge_compression.c doesn't get around this, it just makes sure a file can only grow by one byte, which is about the best you can do.
